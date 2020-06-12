@@ -1,46 +1,26 @@
-var ss = SpreadsheetApp.getActiveSpreadsheet();
-
-function getColumnsNPipelines(url, token) {
+function getDetails(url, token,reportType) {
   var newToken = 'Token token='+token;
   
   /* Get columns */
-  var columns = getColumns(url, newToken);
-  
-  /* Get Pipelines */
-  var pipelines = getPipelines(url,newToken);
+  var results = getColumnsAndFilters(url, newToken, reportType);
    
   /* Show error */
-  if (columns == null || pipelines == null) {
-    columns = [{'field':'error','label':'No columns. Could be due to wrong token or missing setup'}]
-    pipelines = [{'id':'error','name':'No pipelines. Could be due to wrong token or missing setup'}]
+  if (results == null) {
+    results = [{'field':'error','label':'No filters. Could be due to wrong token or missing setup'}]
   };
-  return {'columns': columns, 'pipelines': pipelines};
+  return {'filters': results['filters'], 'columns': results['columns']};
 }
 
 
-
-function generateReport(url, token, columns, data) { 
+function generateReport(url, token, columnsSelected, filter_options,reportType) { 
   var newToken = 'Token token='+token;
   
   /* Get Deals */
-  var deals = getDeals(url, newToken, data);
+  var deals = getDeals(url, newToken, columnsSelected, filter_options,reportType);
   
-  sheetsName = transformDeals(columns, deals)
+  sheetsName = transformDeals(deals)
   
-  if (columns.includes('contact_id')) {
-    var contactsToFind = deals['contacts']
-
-    var contacts = [] 
-    contactsToFind.map(function convert(item) {
-      contacts.push(item['id'].toFixed())
-    })
-    var contactsData = getContacts(url, newToken, contacts)
-    
-    sheetContacts = transformContacts(contactsData)
-    sheetsName = sheetsName.concat(', ',sheetContacts)
-    }
-  
-  if (deals['meta']['total_pages'] == 0) {
+  if (deals['meta']['total'] == 0) {
     var result = 'No deal available'
   }
   else {
@@ -50,90 +30,22 @@ function generateReport(url, token, columns, data) {
 }
 
 
-function transformDeals(columns, deals) {  
-  var numColumns = columns.length;
+function transformDeals(deals) {
+  var numColumns = deals['meta']['headers'].length;
+  var columns = deals['meta']['headers'];
+  var dealsData = deals['data'];
   var rows = [];
- 
-  /* Map id to name for special columns */
-  var specialColumns = {'deal_products':{}, 'deal_stages':{}, 'deal_reasons':{}, 'owners': {}};     
-  for (column in specialColumns) {
-  if (column == 'owners') { 
-    var details = {}
-    var data = deals['users']
-
-    if (typeof data !== 'undefined') {
-      data.map(function convert(item) {
-        details[item['id']] = item['display_name']
-      })     
-    specialColumns[column] = details
-    }}
-  else {
-      var details = {}
-      
-      var data = deals[column]
-      if (typeof data !== 'undefined') {
-        data.map(function convert(item) {
-          details[item['id']] = item['name']
-        })
-      specialColumns[column] = details
-    }}
-  }
-  Logger.log(specialColumns)
   
-  /* Transform Deals */
-  var dealsData = deals['deals']
   for (i in dealsData) {
-    var deal = dealsData[i];
-    var row = [];
-    for (column in columns) {
-      key = columns[column].split('cf_');
-      if (key.length == 1) {
-        /* For special columns: deal_products, deal_stages, deal_reasons */
-        if (key[0].split('_id')[0]+'s' in specialColumns) {
-          var keySpecial = key[0].split('_id')[0]+'s';
-          if (typeof deal[key[0]] !== 'undefined') {
-             row.push(specialColumns[keySpecial][deal[key[0]].toString()])
-          }
-          else {row.push('')}
-        }
-        /* For contacts columns that are arrays */
-        else if (key[0] == 'contact_id' && typeof deal['contact_ids'][0] !== 'undefined') {row.push(deal['contact_ids'][0].toFixed())} 
-        
-        /* For normal columns */
-        else {row.push(deal[key[0]])}
-      }
-      /* For custom columns */
-      else if (key.length == 2) {
-        row.push(deal['custom_field']['cf_'+key[1]]);
-      }
-    }
-    rows.push(row);
+    rows.push(dealsData[i]['data'])
   }
 
   rows.unshift(columns);
   var numRows = rows.length;
-  /* var sheetDeals = ss.insertSheet('Deals'+ss.getSheetId().toString()); */
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheetDeals = ss.getActiveSheet() /* Replace content at current sheet */
-  sheetDeals.clear();
+  sheetDeals.getRange(1,1,sheetDeals.getMaxRows(),numColumns).clear();
   sheetDeals.getRange(1,1,numRows,numColumns).setValues(rows);
   
   return sheetDeals.getName()
-}
-
-
-function transformContacts(contacts) {
-  var columns = ['id','email']
-  var numColumns = columns.length;
-  var rows = []
-  
-  contacts.map(function convert(item) {
-    rows.push([item['id'].toFixed(),item['email']])
-  })
-  
-  rows.unshift(columns);
-  var numRows = rows.length;
-  var sheetContacts = ss.insertSheet('Contacts'+ss.getSheetId().toString());
-  sheetContacts.getRange(1,1,numRows,numColumns).setValues(rows);
-  
-  return sheetContacts.getName()
 }

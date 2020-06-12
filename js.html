@@ -10,70 +10,140 @@
       }
       window.addEventListener('load', preventFormSubmit);
       
-      /* Retrieve columns, deal pipelines */
-      var divColumns = document.getElementById('columnsSelect');
-      var divPipelines = document.getElementById('dealPipelineSelect');
-      var divStages = document.getElementById('dealStagesSelect');
+      /* ------Get columns----------------------------------- */
       
+      /* Retrieve columns and filters*/
+      var divColumns = document.getElementById("columnsList")
+      var columnsShow = [];
+      var filtersShow = [];
       
-      function addData(data) {
-        var columns = data['columns'].sort();
-        var pipelines = data['pipelines'];
+      function addColumnsAndFilters(rawData) {
+        /* Retrieve columns */
+        var columns = rawData['columns']
+        for (type in columns) {columnsShow = columnsShow.concat(columns[type])}
         
-        for (i in columns) {
-           divColumns.innerHTML += "<option value="+columns[i]['name'].split(".")[columns[i]['name'].split(".").length-1]+">"+columns[i]['label']+' ('+columns[i]['name'].split(".")[0]+")"+"</option>"
+        for (i in columnsShow) {
+           divColumns.innerHTML += '<option name=\"'+columnsShow[i]['label']+'\" data-id='+i+'>'+columnsShow[i]['label']+'</option>'
         }
         
-        for (i in pipelines) {       
-           divPipelines.innerHTML += "<option value="+pipelines[i]['id'].toString()+">"+pipelines[i]['name']+"</option>"
-           var stages = pipelines[i]['deal_stages']
-           for (stage in stages) {
-              divStages.innerHTML += "<option value="+stages[stage]['id'].toString()+">"+pipelines[i]['name']+": "+stages[stage]['name']+"</option>"
-           }
-        }
+        filters = rawData['filters']
+        for (type in filters) {filtersShow = filtersShow.concat(filters[type])}; 
       }
+
+      /* Use token to generate Columns and Filters Details */
+      var filter_rules = {"default": [],"custom":[]}
+      var logic = filter_rules['custom'].length;
+      var logicData = ''
       
       function retrieveDetails() {
-        divColumns.innerHTML = ''
-        divPipelines.innerHTML = ''
+        
         var url = document.getElementById('url').value;
         var token = document.getElementById('token').value;
-        google.script.run.withSuccessHandler(addData).getColumnsNPipelines(url, token);
+        var reportType = document.getElementById('reportType').selectedOptions[0].value;
+        
+        /* Clear old data if have */
+        divColumns.innerHTML = ''
+        document.querySelectorAll("select[id='columnsVisible']")[0].innerHTML=''
+        columnsShow = [];
+        document.querySelectorAll("div[name='filter']").forEach(i => i.remove());
+        filtersShow = [];
+        filter_rules = {"default": [],"custom":[]}
+        
+        
+        google.script.run.withSuccessHandler(addColumnsAndFilters).getDetails(url, token, reportType);
+        
+        /* Switch tab */
         document.getElementById('userDetails').classList.remove('active');
         document.getElementById('selectedColumns').classList.add('active');
         document.getElementById('userForm').classList.remove('active');
         document.getElementById('columnsForm').classList.add('active', 'show');
-        
       }
       
       document.getElementById('submitUser').addEventListener("click",retrieveDetails);
       
       /* Search columns */
-      var divColumnsVisible = document.getElementById("columnsVisible")
-      var divColumnsArray = Array.from(divColumns)
-      $("#columnSearch").on("keyup", function() {
-        var value = $(this).val().toLowerCase();
-        $("#columnsSelect option").filter(function() {
-          $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-        });
-      });
+      var divColumnsVisible = document.getElementById("columnsVisible");
+      var divColumnInput = document.getElementById("columnSearch")
       
-      divColumns.addEventListener("change", function () {
-         divColumnsVisible.add(this.options[this.selectedIndex])
+      divColumnInput.addEventListener("change", function () {
+         var input = divColumnInput.value;
+         divColumnsVisible.appendChild(divColumns.options.namedItem(input))
       })
     
       divColumnsVisible.addEventListener("change", function () {
-         divColumns.add(this.options[this.selectedIndex])
-	  })
-      
-      /* Show number of selected columns */
-      function updateSelectedColumns() {
-        var selectedColumns = document.getElementById("selectedColumns")
-        selectedColumns.innerHTML = "Columns ("+divColumnsVisible.options.length.toString()+")"
-      }
-      document.getElementById('columnsSelect').addEventListener("change",updateSelectedColumns);
+         divColumns.appendChild(this.options[this.selectedIndex])
+      })
       
       
+      /* -------Get filters----------------------------------------- */
+      filter_rules = {"default": [],"custom":[]}
+                          
+      document.getElementById('addFilter').addEventListener('click', function addFilter() {
+         var newGroupNumber = document.querySelectorAll("div[name='filter']").length;
+         var filterList = '';
+         for (i in filtersShow) {
+             filterList = filterList.concat('<option name=\"'+filtersShow[i]['label']+'\" data-id='+filtersShow[i]['field']+'>'+filtersShow[i]['label']+'</option>')
+         }
+         
+         document.getElementById('filterGroup').insertAdjacentHTML("beforeend", 
+           '<div class="form-group" data-id=\"'+newGroupNumber+'\" name="filter"> \
+             <label name="filter-label"><small>Filter '+(newGroupNumber+1)+'</small></label><br> \
+             <div> \
+               <input class="form-control" list="filtersList'+newGroupNumber+'\" placeholder="Search field" onchange="updateSelectedFilter(this)"> \
+               <datalist id="filtersList'+newGroupNumber+'">'+filterList+'</datalist> \
+             </div> \
+             <div>  \
+               <input class="form-control" list="filterOptions'+newGroupNumber+'\" placeholder="Search value"> \
+               <datalist id="filterOptions'+newGroupNumber+'\"></datalist> \
+             </div> \
+           </div>')
+         
+       })
+       
+       function updateSelectedFilter(sel) {
+           var filterGroup = sel.parentElement.parentElement
+           var filterGroupNumber = filterGroup.dataset['id']
+           
+           var attribute = sel.list.options.namedItem(sel.value).dataset['id']
+           var attributeInfo = filtersShow[filtersShow.map(i => i.field).indexOf(attribute)]
+           var model = attributeInfo['model']
+           var choices = attributeInfo['choices'];
+           var type = attributeInfo['type'];
+           var operator = '';
+           var choicesList = filterGroup.querySelectorAll("datalist[id=filterOptions"+filterGroupNumber+"]")[0]
+           var value;
+           
+           if (type == 'dropdown') {
+             choicesList.innerHTML = '';
+             for (i in choices) {
+               operator = 'is_in'
+               var value = []
+               choicesList.innerHTML += '<option name=\"'+choices[i]['value']+'\" data-id='+choices[i]['id']+'>'+choices[i]['value']+'</option>'
+             }
+           }
+           else {
+             console.log("Not started yet")
+           }
+           
+          var inputChoicesList = choicesList.previousElementSibling;
+          inputChoicesList.addEventListener('change', function () {
+            var valueSelected = choicesList.options.namedItem(inputChoicesList.value).dataset['id']
+            filter_rules['custom'][filterGroupNumber] = {'attribute':attribute,'operator':operator,'value': value.concat(valueSelected), 'model':model}
+            var logic = filter_rules['custom'].length
+            var logicData = "1"
+            if (logic > 1) {for (i = 2; i < logic+1; i++) {logicData = logicData.concat(" AND "+i.toString())}}
+            document.getElementById("logicData").value = logicData
+          })
+       }
+      
+      /* Reset filters */
+      document.getElementById('resetFilters').addEventListener('click', function() {
+        document.querySelectorAll("div[name='filter']").forEach(i => i.remove());
+        filter_rules = {"default": [],"custom":[]}
+        document.getElementById("logicData").value = ''
+      })
+
+      /* ------------------------------------------------------------ */
       /* Generate report based on filters */    
       var divOutput = document.getElementById("output")
       
@@ -85,49 +155,41 @@
       
       function showResult() {
         window.scrollTo(0,0) /* Auto scroll to top to see notifications */
-        document.getElementById("output").innerHTML = 'Running'
+        divOutput.style.visibility = "visible"
+        document.getElementById("output").innerHTML = '<small>Running</small>'
         
         var url = document.getElementById('url').value;
         var token = document.getElementById('token').value;
-        var columns = Array.from(divColumnsVisible.options).map(option => option.value);
+        var reportType = document.getElementById('reportType').selectedOptions[0].value;
         
-        /* Compulsory Attributes */
-        var pipeline = divPipelines.options[divPipelines.selectedIndex].value;
+        var columnsSelectedIndex = Array.from(divColumnsVisible.options).map(option => Number(option.dataset['id']));
+        var columnsSelected = [];
+        for (i in columnsSelectedIndex) {columnsSelected = columnsSelected.concat(columnsShow[columnsSelectedIndex[i]])}
+        var columnsSelectedClean = columnsSelected.reduce((r, a) => {r[a.parent_model] = [...r[a.parent_model] || [], a]; return r;}, {});
+        console.log(JSON.stringify(columnsSelectedClean))
+        
+        var dateFilter = document.getElementById('dateFilterDefault').selectedOptions[0].value;
         var frdate = document.getElementById('frdate');
-        var frdateValue = frdate.value
-        
+        var frdateValue = frdate.value;
         var todate = document.getElementById('todate');
         var todateValue = document.getElementById('todate').value;
-        
-        var stages = Array.from(divStages.selectedOptions).map(option => option.value);
-        
-        var data = [{'attribute': 'deal_pipeline_id','operator':'is_in','value': pipeline},
-                    {'attribute':'created_at','operator':'is_in_the_range','value':[frdateValue.substring(8,10)+'/'+frdateValue.substring(5,7)+'/'+frdateValue.substring(0,4),
-                            todateValue.substring(8,10)+'/'+todateValue.substring(5,7)+'/'+todateValue.substring(0,4)]},
-                    {'attribute':'deal_stage_id','operator':'is_in','value':stages}]
-        
-        /* Optional Attributes */
-        var closedDateFromValue = document.getElementById('closedDateFrom').value
-        if (closedDateFromValue != "") {
-          data.push({'attribute':'closed_date','operator':'is_after','value':closedDateFromValue.substring(8,10)+'/'+closedDateFromValue.substring(5,7)+'/'+closedDateFromValue.substring(0,4)})
-        }
-        
-        var closedDateToValue = document.getElementById('closedDateTo').value
-        if (closedDateToValue != "") {
-          data.push({'attribute':'closed_date','operator':'is_before','value':closedDateToValue.substring(8,10)+'/'+closedDateToValue.substring(5,7)+'/'+closedDateToValue.substring(0,4)})
-        }
-        
+        if (reportType == 'leads_with_converted') {var model = 'Lead'}
+        else if (reportType == 'deals') {var model = 'Deal'}
+        else if (reportType == 'deal_contacts') {var model = 'Deal'}
+        filter_rules['default'] = [{"attribute": dateFilter,"operator": "is_in_the_range","model": model, "value": [frdateValue.substring(8,10)+'/'+frdateValue.substring(5,7)+'/'+frdateValue.substring(0,4), todateValue.substring(8,10)+'/'+todateValue.substring(5,7)+'/'+todateValue.substring(0,4)]}]
+        logicData = document.getElementById('logicData').value
+        var filter_options = {"logic_type":"advanced","simple_logic_operator":"AND", "logic": "("+logicData+")","filter_rules":filter_rules}
+        console.log(JSON.stringify(filter_options))
      
-        if (url != "" && token != "" && columns.length > 0 && pipeline != "" 
+        if (url != "" && token != "" && columnsShow.length > 0
         && frdate != "" && frdate.valueAsDate <= new Date() && todate != "" && todate.valueAsDate >= frdate.valueAsDate) {
-           google.script.run.withSuccessHandler(addResult).generateReport(url, token, columns, data);
+           google.script.run.withSuccessHandler(addResult).generateReport(url, token, columnsSelectedClean, filter_options,reportType);
         }
         
         else try {
            if(url == "") throw "Missing Company Name";
            if(token == "") throw "Missing Token";
-           if(columns == "") throw "No Selected Columns";
-           if(pipeline == "") throw "No Selected Pipline";
+           if(columnsSelected == "") throw "No Selected Columns";
            if(frdate == "") throw "No From Date";
            if(frdate.valueAsDate > new Date()) throw "From Date should be in the past";
            if(todate == "") throw "No To Date";
@@ -137,7 +199,6 @@
            divOutput.style.visibility = "visible"
            document.getElementById("output").innerHTML += "<small>Errors: " + err + "</small>";
         }
-        
       }
 
        document.getElementById('submitFilters').addEventListener("click",showResult);

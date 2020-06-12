@@ -17,7 +17,7 @@
     
     <ul class="nav nav-tabs small">
       <li><a class="nav-link active" data-toggle="tab" href="#userForm" id="userDetails">User Details</a></li>
-      <li><a class="nav-link" data-toggle="tab" href="#columnsForm" id="selectedColumns">Columns: 0</a></li>
+      <li><a class="nav-link" data-toggle="tab" href="#columnsForm" id="selectedColumns">Columns</a></li>
       <li><a class="nav-link" data-toggle="tab" href="#filtersForm">Filters</a></li>
     </ul>
     
@@ -36,6 +36,15 @@
         <input type="text" class="form-control" id="token" required value="">
         <small>Retrieve under API Settings</small>
       </div>
+      
+      <div class="form-group">
+        <label for="reportType">Report Type</label>
+        <select class="custom-select" id="reportType" required>
+          <option value="leads_with_converted">Leads with Converted</option>
+          <option value="deals">Deals</option>
+          <option value="deal_contacts">Deals with Contacts</option>
+        </select>
+      </div>
     
       <button type="button" class="btn btn-secondary btn-sm" id="submitUser">Retrieve details</button>
     </form>
@@ -45,51 +54,45 @@
     <form id="columnsForm" class="tab-pane fade">
       <label for="columnsSelect">Report columns</label>
       <br>
-      <input class="form-control" id="columnSearch" type="text" placeholder="Search column">
+      <input class="form-control" list="columnsList" id="columnSearch" placeholder="Search column">
+      <datalist id="columnsList"></datalist>
       <br>
+      
       <small>Selected columns. At least 1 column</small>
       <div class="input-group form-group">
         <select class="form-control" id="columnsVisible" size="10">
         </select> 
       </div>
-      
-      <small>List of columns</small>
-      <div class="input-group form-group"> 
-        <select class="custom-select" id="columnsSelect" size="10">
-        </select>
-      </div>
-      
     </form>
     
     <!-- Retrieve details for filters -->
     <form id="filtersForm" class="tab-pane fade">
       <div class="form-group">
-        <label for="frdate">Create at Date (From - To) *</label>
+        <small>Time Frame (From - To) *</small>
+        <select class="form-control" id="dateFilterDefault">
+          <option value="created_at">Created At</option>
+          <option value="closed_date">Closed Date</option>
+          <option value="stage_updated_time">[Deal] Stage Updated At</option>
+          <option value="converted_time">[Leads] Stage Updated At</option>
+        </select>
         <input type="date" class="form-control" id="frdate" value="" required>
         <input type="date" class="form-control" id="todate" value="" required>
       </div>
-    
-      <label for="dealPipelineSelect">Deal Pipeline *</label>
-      <div class="input-group form-group"> 
-        <select class="custom-select" id="dealPipelineSelect" required>
-        </select>
-      </div>
-
-      <label for="dealStagesSelect">Deal Stages</label><br>
-      <small>Use cmd or ctrl to multi select</small>
-      <div class="input-group form-group"> 
-        <select class="custom-select" id="dealStagesSelect" size="10" multiple>
-        </select>
+      
+      <div id="filterGroup">
+        <div>
+        <button class="btn btn-link btn-sm" id="addFilter">Add filter</button>
+        <button class="btn btn-link btn-sm" id="resetFilters">Reset filters</button>
+        </div>
       </div>
       
-      <div class="form-group">
-        <label for="closedDate">Closed Date (From - To)</label>
-        <input type="date" class="form-control" id="closedDateFrom" value="">
-        <input type="date" class="form-control" id="closedDateTo" value="">
-      </div>
-      
-      <small>Report updated in current ACTIVE tab</small>
-      <button type="submit" class="btn btn-secondary btn-sm" id="submitFilters">Get report</button>
+      <div id="submitGroup">
+        <small>Logic type</small>
+        <input type="text" class="form-control" id="logicData" value="">
+        <br>
+        <small>Report updated in current ACTIVE tab</small>
+        <button type="submit" class="btn btn-secondary btn-sm" id="submitFilters">Get report</button>
+     </div>
     </form>
     </div>
 

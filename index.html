@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <base target="_top">
+    <?!= include('css') ?>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script> -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <title>Freshsales GSheet Connector</title>
+  </head>
+  <body>
+  
+  
+     <div id="output" class="alert alert-info" style ="margin:5px 10px; visibility:collapse"  role="alert"></div>
+    
+    <ul class="nav nav-tabs small">
+      <li><a class="nav-link active" data-toggle="tab" href="#userForm" id="userDetails">User Details</a></li>
+      <li><a class="nav-link" data-toggle="tab" href="#columnsForm" id="selectedColumns">Columns: 0</a></li>
+      <li><a class="nav-link" data-toggle="tab" href="#filtersForm">Filters</a></li>
+    </ul>
+    
+    <div class="tab-content">
+    <!-- User details -->
+    <form id="userForm" class="tab-pane in active">
+    
+      <div class="form-group">
+        <label for="url">Company name: </label>
+        <input type="text" class="form-control" id="url" required value="">
+        <small> www.&lsaquo;company_name&rsaquo;.freshsales.io</small>
+      </div>
+    
+      <div class="form-group">
+        <label for="token">API Token </label>
+        <input type="text" class="form-control" id="token" required value="">
+        <small>Retrieve under API Settings</small>
+      </div>
+    
+      <button type="button" class="btn btn-secondary btn-sm" id="submitUser">Retrieve details</button>
+    </form>
+    
+    
+    <!-- Columns -->
+    <form id="columnsForm" class="tab-pane fade">
+      <label for="columnsSelect">Report columns</label>
+      <br>
+      <input class="form-control" id="columnSearch" type="text" placeholder="Search column">
+      <br>
+      <small>Selected columns. At least 1 column</small>
+      <div class="input-group form-group">
+        <select class="form-control" id="columnsVisible" size="10">
+        </select> 
+      </div>
+      
+      <small>List of columns</small>
+      <div class="input-group form-group"> 
+        <select class="custom-select" id="columnsSelect" size="10">
+        </select>
+      </div>
+      
+    </form>
+    
+    <!-- Retrieve details for filters -->
+    <form id="filtersForm" class="tab-pane fade">
+      <div class="form-group">
+        <label for="frdate">Create at Date (From - To) *</label>
+        <input type="date" class="form-control" id="frdate" value="" required>
+        <input type="date" class="form-control" id="todate" value="" required>
+      </div>
+    
+      <label for="dealPipelineSelect">Deal Pipeline *</label>
+      <div class="input-group form-group"> 
+        <select class="custom-select" id="dealPipelineSelect" required>
+        </select>
+      </div>
+
+      <label for="dealStagesSelect">Deal Stages</label><br>
+      <small>Use cmd or ctrl to multi select</small>
+      <div class="input-group form-group"> 
+        <select class="custom-select" id="dealStagesSelect" size="10" multiple>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="closedDate">Closed Date (From - To)</label>
+        <input type="date" class="form-control" id="closedDateFrom" value="">
+        <input type="date" class="form-control" id="closedDateTo" value="">
+      </div>
+      
+      <small>Report updated in current ACTIVE tab</small>
+      <button type="submit" class="btn btn-secondary btn-sm" id="submitFilters">Get report</button>
+    </form>
+    </div>
+
+    <?!= include('js') ?>
+    
+  </body>
+</html>
